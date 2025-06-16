@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from 'service/axiosInstance';
 import { useUserStore } from 'store/userStore';
 
@@ -16,13 +16,11 @@ export function SignIn() {
       const { user, accessToken } = res.data;
 
       // ✅ 토큰 저장
-      localStorage.setItem('user', JSON.stringify(user));
+      // localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('accessToken', accessToken);
+      setUser({ email: user.email, nickname: user.nickname });
 
-      const nickname = '';
-      setUser({ email, nickname });
-
-      navigate('/dashboard'); // 로그인 후 이동
+      navigate('/'); // 로그인 후 이동
     } catch (e) {
       console.log(e);
       alert('이메일 또는 패스워드를 확인해주세요.');
@@ -58,6 +56,13 @@ export function SignIn() {
         >
           로그인
         </button>
+
+        <div className="mt-4 text-center text-sm text-gray-600">
+          회원이 아니신가요?{' '}
+          <Link to="/signup" className="text-indigo-600 hover:underline">
+            회원가입
+          </Link>
+        </div>
       </div>
     </div>
   );

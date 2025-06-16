@@ -3,9 +3,9 @@ import { useUserStore } from '../store/userStore';
 import api from 'service/axiosInstance';
 
 export function Profile() {
-  const { email, nickname, setUser, clearUser } = useUserStore();
-  const [editName, setEditName] = useState(nickname);
-  const [isEditing, setIsEditing] = useState(false);
+  const { email, nickname, setUser } = useUserStore();
+  const [newName, setNewName] = useState(nickname);
+  const [editMode, setEditMode] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,10 +18,10 @@ export function Profile() {
 
   const handleSaveProfile = async () => {
     try {
-      const res = await api.put('/users/me', { nickname: editName });
+      const res = await api.put('/users/me', { nickname: newName });
       console.log(res);
-      setUser({ email, nickname: editName });
-      setIsEditing(false);
+      setUser({ email, nickname: newName });
+      setEditMode(false);
       alert('프로필이 수정되었어요 !');
     } catch (e) {
       console.log(e);
@@ -58,12 +58,6 @@ export function Profile() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    clearUser();
-    window.location.href = '/signin';
-  };
-
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full">
@@ -74,34 +68,34 @@ export function Profile() {
 
         <div className="mb-6">
           <label className="block mb-1 font-medium text-gray-700">닉네임</label>
-          {isEditing ? (
-            <>
+          {editMode ? (
+            <div className="flex flex-col sm:flex-row gap-2 mt-1">
               <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="border rounded-lg px-4 py-2 w-full mb-2"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="border px-3 py-2 rounded w-full"
               />
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <button
                   onClick={handleSaveProfile}
-                  className="bg-green-500 text-white py-1 px-4 rounded-lg"
+                  className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded"
                 >
                   저장
                 </button>
                 <button
-                  onClick={() => setIsEditing(false)}
-                  className="bg-gray-300 py-1 px-4 rounded-lg"
+                  onClick={() => setEditMode(false)}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-gray-200 text-gray-700 rounded"
                 >
                   취소
                 </button>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <p className="text-lg font-semibold">{nickname}</p>
+            <div className="flex items-center justify-between mt-1">
+              <span>{nickname}</span>
               <button
-                onClick={() => setIsEditing(true)}
-                className="text-sm text-indigo-600 underline"
+                onClick={() => setEditMode(true)}
+                className="text-sm text-indigo-600 hover:underline"
               >
                 수정
               </button>
@@ -141,11 +135,6 @@ export function Profile() {
           비밀번호 변경
         </button>
       </div>
-
-      <hr className="my-4" />
-      <button onClick={handleLogout} className="text-sm text-red-500 underline">
-        로그아웃
-      </button>
     </div>
   );
 }

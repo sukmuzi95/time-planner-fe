@@ -1,5 +1,5 @@
 import { JSX } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 interface ProtectedRouteProps {
   children: JSX.Element;
@@ -7,5 +7,11 @@ interface ProtectedRouteProps {
 
 export function RequireAuth({ children }: ProtectedRouteProps) {
   const token = localStorage.getItem('accessToken');
-  return token ? children : <Navigate to="/signin" />;
+  const location = useLocation();
+
+  if (!token) {
+    return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  return children;
 }
