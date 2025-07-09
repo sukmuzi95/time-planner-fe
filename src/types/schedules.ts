@@ -3,21 +3,15 @@ export interface Schedule {
   title: string;
   startDateTime: string;
   endDateTime: string;
-  repeatOption?: {
-    type: string;
-    interval: number;
-    untilDate: string;
-  };
+  ownerId: number;
+  ownerName: string;
+  color: string;
 }
 
-export interface Calendar {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  color: string;
-  extendedProps: {
-    repeatOption?: Schedule['repeatOption'];
-    raw: Schedule;
-  };
-}
+// export interface CalendarEvent {
+//   id: string;
+//   title: string;
+//   start: string;
+//   end: string;
+//   color: string;
+// }

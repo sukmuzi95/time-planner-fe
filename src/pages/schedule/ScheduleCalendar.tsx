@@ -1,162 +1,129 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Calendar, momentLocalizer, Event as CalendarEvent, View } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import api from 'service/axiosInstance';
+import ScheduleForm from 'pages/schedule/ScheduleForm';
 
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { EventClickArg } from '@fullcalendar/core';
-import { Calendar, Schedule } from 'types/schedules';
+const localizer = momentLocalizer(moment);
 
-export default function ScheduleCalendar() {
-  const [events, setEvents] = useState<Calendar[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<Calendar | null>(null);
-  const [search, setSearch] = useState('');
+interface ScheduleData {
+  id: number;
+  title: string;
+  start: string;
+  end: string;
+  color: string;
+  ownerId: number;
+  ownerName: string;
+}
 
-  useEffect(() => {
-    const fetchSchedules = async () => {
-      try {
-        const res = await api.get('/schedules');
-        const fetched = res.data.map((schedule: Schedule) => {
-          const base = {
-            id: schedule.id.toString(),
-            title: schedule.title,
-            start: schedule.startDateTime,
-            end: schedule.endDateTime,
-            color:
-              schedule.repeatOption && schedule.repeatOption.type !== 'NONE'
-                ? '#4F46E5'
-                : '#16a34a',
-            extendedProps: {
-              repeatOption: schedule.repeatOption
-            }
-          };
-          return base;
-        });
-        setEvents(fetched);
-      } catch (err) {
-        console.error('일정 불러오기 실패:', err);
-      }
-    };
+export default function ScheduleCalendarPage() {
+  const [schedules, setSchedules] = useState<ScheduleData[]>([]);
+  const [selected, setSelected] = useState<ScheduleData | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  // const [view, setView] = useState<'month' | 'week'>('month');
+  const views: View[] = ['month', 'week', 'day', 'agenda'];
 
-    fetchSchedules();
+  const fetchSchedules = useCallback(async () => {
+    const res = await api.get('/schedules/shared');
+    setSchedules(res.data);
   }, []);
 
-  const handleEventClick = (clickInfo: EventClickArg) => {
-    setSelectedEvent({
-      id: clickInfo.event.id,
-      title: clickInfo.event.title,
-      start: clickInfo.event.startStr,
-      end: clickInfo.event.endStr,
-      color: clickInfo.event.backgroundColor,
-      extendedProps: clickInfo.event.extendedProps as Calendar['extendedProps']
+  useEffect(() => {
+    fetchSchedules();
+  }, [fetchSchedules]);
+
+  const handleSelectSlot = ({ start }: { start: Date }) => {
+    setSelected({
+      id: 0,
+      title: '',
+      start: moment(start).format('YYYY-MM-DDTHH:mm'),
+      end: moment(start).add(1, 'hours').format('YYYY-MM-DDTHH:mm'),
+      color: '#6366F1',
+      ownerId: 0,
+      ownerName: ''
     });
+    setShowForm(true);
+  };
+
+  const handleSelectEvent = (event: CalendarEvent) => {
+    const found = schedules.find((s) => s.id === event.resource.id);
+    if (found) {
+      setSelected(found);
+      setShowForm(true);
+    }
+  };
+
+  const handleSubmit = async () => {
+    setShowForm(false);
+    await fetchSchedules();
   };
 
   const handleDelete = async () => {
-    if (!selectedEvent) return;
-    if (!window.confirm('정말 삭제하시겠습니까?')) return;
-
-    try {
-      await api.delete(`/schedules/${selectedEvent.id}`);
-      setEvents(events.filter((e) => e.id !== selectedEvent.id));
-      setSelectedEvent(null);
-    } catch (err) {
-      console.error('삭제 실패:', err);
-      alert('삭제에 실패했습니다.');
+    if (selected?.id) {
+      await api.delete(`/schedules/shared/${selected.id}`);
+      setShowForm(false);
+      await fetchSchedules();
     }
   };
 
-  const handleSave = async () => {
-    try {
-      const payload = {
-        title: selectedEvent?.title,
-        startDateTime: selectedEvent?.start,
-        endDateTime: selectedEvent?.end
-      };
-      await api.put(`/schedules/${selectedEvent?.id}`, payload);
-      alert('수정되었습니다.');
-      setSelectedEvent(null);
-    } catch (err) {
-      console.error('수정 실패:', err);
-      alert('수정에 실패했습니다.');
-    }
-  };
-
-  const filteredEvents = events.filter((e) => e.title.toLowerCase().includes(search.toLowerCase()));
+  const events: CalendarEvent[] = schedules.map((schedule) => ({
+    title: `${schedule.title} (${schedule.ownerName})`,
+    start: moment.parseZone(schedule.start).toDate(),
+    end: moment.parseZone(schedule.end).toDate(),
+    resource: { id: schedule.id, color: schedule.color },
+    allDay: false
+  }));
 
   return (
-    <div className="max-w-5xl mx-auto mt-10">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4">📅 나의 일정</h2>
-      <div className="bg-white shadow rounded-lg p-4">
-        <input
-          type="text"
-          placeholder="일정 검색"
-          className="mb-4 px-4 py-2 border rounded w-full"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">📅 공유 캘린더</h1>
+      {/* <div className="space-x-2">
+        <button
+          className={`px-3 py-1 rounded ${view === 'month' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          onClick={() => setView('month')}
+        >
+          월간 뷰
+        </button>
+        <button
+          className={`px-3 py-1 rounded ${view === 'week' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+          onClick={() => setView('week')}
+        >
+          주간 뷰
+        </button>
+      </div> */}
+      <Calendar
+        selectable
+        localizer={localizer}
+        events={events}
+        defaultDate={new Date()}
+        style={{ height: 700 }}
+        onSelectSlot={handleSelectSlot}
+        onSelectEvent={handleSelectEvent}
+        startAccessor="start"
+        endAccessor="end"
+        titleAccessor="title"
+        views={views}
+        showMultiDayTimes
+        eventPropGetter={(event) => ({
+          style: {
+            backgroundColor: event.resource.color,
+            color: 'white',
+            borderRadius: '6px',
+            padding: '4px'
+          }
+        })}
+      />
 
-        <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-          }}
-          events={filteredEvents}
-          eventClick={handleEventClick}
-          height="auto"
-          locale="ko"
-        />
-      </div>
-
-      {selectedEvent && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-2">일정 수정</h3>
-            <label className="block text-sm font-medium">제목</label>
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2 mb-3"
-              value={selectedEvent.title}
-              onChange={(e) => setSelectedEvent({ ...selectedEvent, title: e.target.value })}
+      {showForm && selected && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-xl">
+            <ScheduleForm
+              defaultValues={selected}
+              onSubmit={handleSubmit}
+              onCancel={() => setShowForm(false)}
+              onDelete={selected.id !== 0 ? handleDelete : undefined}
             />
-            <label className="block text-sm font-medium">시작 시간</label>
-            <input
-              type="datetime-local"
-              className="w-full border rounded px-3 py-2 mb-3"
-              value={selectedEvent.start?.slice(0, 16)}
-              onChange={(e) => setSelectedEvent({ ...selectedEvent, start: e.target.value })}
-            />
-            <label className="block text-sm font-medium">종료 시간</label>
-            <input
-              type="datetime-local"
-              className="w-full border rounded px-3 py-2 mb-3"
-              value={selectedEvent.end?.slice(0, 16)}
-              onChange={(e) => setSelectedEvent({ ...selectedEvent, end: e.target.value })}
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={handleSave}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
-              >
-                저장
-              </button>
-              <button
-                onClick={handleDelete}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-              >
-                삭제
-              </button>
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded"
-              >
-                닫기
-              </button>
-            </div>
           </div>
         </div>
       )}
