@@ -38,7 +38,7 @@ export function Home() {
                 </p>
               </div>
             </Link>
-            <Link to="/schedule/list">
+            <Link to="/schedule">
               <div className="bg-indigo-50 rounded-xl p-6 shadow text-center">
                 <h3 className="text-xl font-semibold text-indigo-700 mb-2">시간표 보기</h3>
                 <p className="text-gray-600">
