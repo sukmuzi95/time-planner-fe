@@ -5,29 +5,36 @@ import { Home } from 'pages/Home';
 import { RequireAuth } from 'router/RequireAuth';
 import { Profile } from 'pages/Profile';
 import MainLayout from 'layout/MainLayout';
-import ScheduleForm from 'pages/schedule/ScheduleForm';
 import ScheduleCalendar from 'pages/schedule/ScheduleCalendar';
+import { useErrorStore } from 'store/errorStore';
+import ErrorAlert from 'components/ErrorAlert';
 
 export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route
-          element={
-            <RequireAuth>
-              <MainLayout />
-            </RequireAuth>
-          }
-        >
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/schedule" element={<ScheduleForm />} />
-          <Route path="/schedule/list" element={<ScheduleCalendar />} />
-        </Route>
+  const { errorMessage, setErrorMessage } = useErrorStore();
 
-        <Route path="/" element={<Home />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/signin" element={<SignIn />} />
-      </Routes>
-    </Router>
+  return (
+    <>
+      <ErrorAlert message={errorMessage} onClose={() => setErrorMessage(null)} />
+
+      <Router>
+        <Routes>
+          <Route
+            element={
+              <RequireAuth>
+                <MainLayout />
+              </RequireAuth>
+            }
+          >
+            <Route path="/profile" element={<Profile />} />
+            {/* <Route path="/schedule" element={<ScheduleForm />} /> */}
+            <Route path="/schedule" element={<ScheduleCalendar />} />
+          </Route>
+
+          <Route path="/" element={<Home />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/signin" element={<SignIn />} />
+        </Routes>
+      </Router>
+    </>
   );
 }
