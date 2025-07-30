@@ -14,7 +14,6 @@ export function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
     clearUser();
     navigate('/');
   };

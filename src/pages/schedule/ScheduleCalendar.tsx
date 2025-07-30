@@ -67,11 +67,24 @@ export default function ScheduleCalendarPage() {
     }
   };
 
+  const getColorForUser = (userId: number): string => {
+    const colors = [
+      '#6366F1', // indigo
+      '#10B981', // emerald
+      '#F59E0B', // amber
+      '#EF4444', // red
+      '#3B82F6', // blue
+      '#8B5CF6', // violet
+      '#EC4899' // pink
+    ];
+    return colors[userId % colors.length];
+  };
+
   const events: CalendarEvent[] = schedules.map((schedule) => ({
     title: `${schedule.title} (${schedule.ownerName})`,
     start: moment.parseZone(schedule.start).toDate(),
     end: moment.parseZone(schedule.end).toDate(),
-    resource: { id: schedule.id, color: schedule.color },
+    resource: { id: schedule.id, color: getColorForUser(schedule.ownerId) },
     allDay: false
   }));
 
@@ -104,7 +117,7 @@ export default function ScheduleCalendarPage() {
         endAccessor="end"
         titleAccessor="title"
         views={views}
-        showMultiDayTimes
+        // showMultiDayTimes
         eventPropGetter={(event) => ({
           style: {
             backgroundColor: event.resource.color,
